@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5efe4">
+    <title>日本東北 2026 家庭自駕旅行手冊</title>
+    <meta name="description" content="日本東北 2026 家庭自駕旅行手冊，支援手機查看、編輯、匯入匯出與 LocalStorage 儲存。">
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Family Road Trip Notebook</p>
+        <h1>日本東北 2026</h1>
+        <p class="trip-meta">2026/10/15 - 2026/10/20 · 4 位大人 + 1 位 10 歲小孩</p>
+      </div>
+      <button class="icon-text-button" id="editModeButton" type="button" aria-pressed="false">
+        <span aria-hidden="true">✎</span>
+        <span>編輯行程</span>
+      </button>
+    </header>
+
+    <main class="app-shell">
+      <section class="view-panel active" id="todayView" aria-labelledby="todayTitle">
+        <div class="section-title-row">
+          <div>
+            <p class="eyebrow">Today</p>
+            <h2 id="todayTitle">今日</h2>
+          </div>
+        </div>
+        <div id="todayContent"></div>
+      </section>
+
+      <section class="view-panel" id="itineraryView" aria-labelledby="itineraryTitle">
+        <div class="section-title-row">
+          <div>
+            <p class="eyebrow">Itinerary</p>
+            <h2 id="itineraryTitle">Day 1 - Day 6</h2>
+          </div>
+        </div>
+        <div class="day-tabs" id="dayTabs" role="tablist" aria-label="切換每日行程"></div>
+        <div id="dayContent"></div>
+      </section>
+
+      <section class="view-panel" id="hotelsView" aria-labelledby="hotelsTitle">
+        <div class="section-title-row">
+          <div>
+            <p class="eyebrow">Stay</p>
+            <h2 id="hotelsTitle">住宿</h2>
+          </div>
+        </div>
+        <div id="hotelsContent" class="simple-list"></div>
+      </section>
+
+      <section class="view-panel" id="moreView" aria-labelledby="moreTitle">
+        <div class="section-title-row">
+          <div>
+            <p class="eyebrow">More</p>
+            <h2 id="moreTitle">更多</h2>
+          </div>
+        </div>
+        <div class="tool-grid">
+          <button class="tool-button" id="toggleEditFromMore" type="button">編輯模式</button>
+          <button class="tool-button" id="showCandidatesButton" type="button">候選景點</button>
+          <button class="tool-button" id="exportButton" type="button">匯出行程</button>
+          <label class="tool-button file-tool">
+            匯入行程
+            <input id="importInput" type="file" accept="application/json,.json">
+          </label>
+          <button class="tool-button danger" id="resetButton" type="button">恢復原始行程</button>
+        </div>
+        <section class="candidates-panel" id="candidatesPanel" hidden>
+          <h3>候選／已移除項目</h3>
+          <p class="hint">包含 standby、hidden、deleted。恢復後會回到該日正式行程底部。</p>
+          <div id="candidatesContent" class="simple-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="主要導覽">
+      <button class="nav-button active" type="button" data-view="todayView">今日</button>
+      <button class="nav-button" type="button" data-view="itineraryView">行程</button>
+      <button class="nav-button" type="button" data-view="hotelsView">住宿</button>
+      <button class="nav-button" type="button" data-view="moreView">更多</button>
+    </nav>
+
+    <div class="modal-backdrop" id="editorBackdrop" hidden>
+      <section class="editor-sheet" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <form id="itemForm">
+          <div class="editor-header">
+            <h2 id="editorTitle">新增行程</h2>
+            <button class="icon-button" id="closeEditorButton" type="button" aria-label="關閉">×</button>
+          </div>
+          <div class="form-grid">
+            <label>日期
+              <select name="day" required></select>
+            </label>
+            <label>類型
+              <select name="type" required></select>
+            </label>
+            <label>名稱
+              <input name="name" type="text" required>
+            </label>
+            <label>日文名稱
+              <input name="japaneseName" type="text">
+            </label>
+            <label>時段
+              <select name="period"></select>
+            </label>
+            <label>優先級
+              <select name="priority"></select>
+            </label>
+            <label class="wide">簡短說明
+              <textarea name="description" rows="2"></textarea>
+            </label>
+            <label class="wide">備註
+              <textarea name="note" rows="3"></textarea>
+            </label>
+          </div>
+
+          <details class="more-fields">
+            <summary>更多資訊</summary>
+            <div class="form-grid">
+              <label class="wide">Google Maps
+                <input name="googleMapsUrl" type="url">
+              </label>
+              <label class="wide">地址
+                <input name="address" type="text">
+              </label>
+              <label>電話
+                <input name="phone" type="tel">
+              </label>
+              <label>Map Code
+                <input name="mapCode" type="text">
+              </label>
+              <label>停車
+                <input name="parking" type="text">
+              </label>
+              <label>步行
+                <input name="walking" type="text">
+              </label>
+              <label>樓梯
+                <input name="stairs" type="text">
+              </label>
+              <label>廁所
+                <input name="toilet" type="text">
+              </label>
+              <label>營業時間
+                <input name="openingHours" type="text">
+              </label>
+              <label>價格
+                <input name="price" type="text">
+              </label>
+              <label class="wide">預約資訊
+                <input name="reservation" type="text">
+              </label>
+              <label class="wide">長輩提醒
+                <textarea name="seniorNote" rows="2"></textarea>
+              </label>
+              <label class="wide">小孩提醒
+                <textarea name="childNote" rows="2"></textarea>
+              </label>
+            </div>
+          </details>
+
+          <div class="editor-actions">
+            <button class="secondary-button" id="cancelEditorButton" type="button">取消</button>
+            <button class="primary-button" type="submit">儲存</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="data/itinerary.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
