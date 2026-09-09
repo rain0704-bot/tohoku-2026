@@ -2,6 +2,10 @@
   const STORAGE_KEY = "tohoku-2026-itinerary";
   const PRIVATE_STORAGE_KEY = "tohoku-2026-private-settings";
   const OFFICIAL_DAY2_UPDATED = "2026-09-09";
+  const OFFICIAL_DAY3_UPDATED = "2026-09-09";
+  const OFFICIAL_DAY4_UPDATED = "2026-09-09";
+  const OFFICIAL_DAY5_UPDATED = "2026-09-09";
+  const OFFICIAL_DAY6_UPDATED = "2026-09-09";
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -61,13 +65,82 @@
     return data;
   }
 
+  function migrateDay3Official(data) {
+    const sourceDay3 = window.ORIGINAL_ITINERARY.days.find(function (day) {
+      return day.day === 3;
+    });
+    const day3Index = data.days.findIndex(function (day) {
+      return day.day === 3;
+    });
+    if (!sourceDay3 || day3Index < 0) return data;
+    if (data.days[day3Index].versionStatus === "official" && data.days[day3Index].lastUpdated === OFFICIAL_DAY3_UPDATED) return data;
+    data.days[day3Index] = clone(sourceDay3);
+    return data;
+  }
+
+  function migrateDay4Official(data) {
+    const sourceDay4 = window.ORIGINAL_ITINERARY.days.find(function (day) {
+      return day.day === 4;
+    });
+    const day4Index = data.days.findIndex(function (day) {
+      return day.day === 4;
+    });
+    if (!sourceDay4 || day4Index < 0) return data;
+    if (data.days[day4Index].versionStatus === "official" && data.days[day4Index].lastUpdated === OFFICIAL_DAY4_UPDATED) return data;
+    data.days[day4Index] = clone(sourceDay4);
+    return data;
+  }
+
+  function isPlaceholderDay(day) {
+    if (!day) return false;
+    const title = typeof day.title === "string" ? day.title : "";
+    const route = typeof day.route === "string" ? day.route : "";
+    const driveTime = typeof day.driveTime === "string" ? day.driveTime : "";
+    const items = Array.isArray(day.items) ? day.items : [];
+    const placeholderItems = items.every(function (item) {
+      const name = typeof item.name === "string" ? item.name : "";
+      return item.status === "standby" || name.includes("待填入") || name.includes("Placeholder");
+    });
+    return title.includes("Placeholder") || route === "待填入" || (driveTime === "待確認" && items.length === 0) || (items.length > 0 && placeholderItems);
+  }
+
+  function migrateDay5Official(data) {
+    const sourceDay5 = window.ORIGINAL_ITINERARY.days.find(function (day) {
+      return day.day === 5;
+    });
+    const day5Index = data.days.findIndex(function (day) {
+      return day.day === 5;
+    });
+    if (!sourceDay5 || day5Index < 0) return data;
+    const currentDay5 = data.days[day5Index];
+    if (currentDay5.versionStatus === "official" && currentDay5.lastUpdated === OFFICIAL_DAY5_UPDATED) return data;
+    if (!isPlaceholderDay(currentDay5)) return data;
+    data.days[day5Index] = clone(sourceDay5);
+    return data;
+  }
+
+  function migrateDay6Official(data) {
+    const sourceDay6 = window.ORIGINAL_ITINERARY.days.find(function (day) {
+      return day.day === 6;
+    });
+    const day6Index = data.days.findIndex(function (day) {
+      return day.day === 6;
+    });
+    if (!sourceDay6 || day6Index < 0) return data;
+    const currentDay6 = data.days[day6Index];
+    if (currentDay6.versionStatus === "official" && currentDay6.lastUpdated === OFFICIAL_DAY6_UPDATED) return data;
+    if (!isPlaceholderDay(currentDay6)) return data;
+    data.days[day6Index] = clone(sourceDay6);
+    return data;
+  }
+
   function loadItinerary() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (isValidItinerary(parsed)) {
-          const migrated = migrateDay2Official(migrateDay1DisplayNames(parsed));
+          const migrated = migrateDay6Official(migrateDay5Official(migrateDay4Official(migrateDay3Official(migrateDay2Official(migrateDay1DisplayNames(parsed))))));
           localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
           return migrated;
         }
