@@ -4,7 +4,19 @@
     activeDay: 1,
     activeView: "todayView",
     editMode: false,
-    editingItemId: null
+    editingItemId: null,
+    privateSettings: window.ItineraryStorage.loadPrivateSettings(),
+    undoStack: [],
+    redoStack: [],
+    drag: {
+      itemId: null,
+      active: false,
+      timer: null,
+      startX: 0,
+      startY: 0,
+      pointerId: null,
+      currentDrop: null
+    }
   };
 
   const $ = function (selector, root) {
@@ -29,6 +41,35 @@
     });
   }
 
+  function safeHttpUrl(value) {
+    if (!value) return "";
+    try {
+      const url = new URL(String(value), window.location.href);
+      return url.protocol === "http:" || url.protocol === "https:" ? url.href : "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function mapUrlForItem(item) {
+    return safeHttpUrl(item.mapUrl || item.googleMapsUrl || item.mapLink || item.maps);
+  }
+
+  function privateShortcutName(itemId) {
+    const value = state.privateSettings.hotelShortcuts[itemId];
+    return typeof value === "string" ? value.trim() : "";
+  }
+
+  function shortcutUrl(name) {
+    return "shortcuts://run-shortcut?name=" + encodeURIComponent(name);
+  }
+
+  function savePrivateSettings(message) {
+    window.ItineraryStorage.savePrivateSettings(state.privateSettings);
+    renderHotels();
+    if (message) showToast(message);
+  }
+
   function showToast(message) {
     const toast = $("#toast");
     toast.textContent = message;
@@ -43,6 +84,48 @@
     window.ItineraryStorage.saveItinerary(state.data);
     render();
     if (message) showToast(message);
+  }
+
+  function cloneData(data) {
+    return window.ItineraryStorage.clone(data);
+  }
+
+  function applyHistoryState(data, message) {
+    state.data = cloneData(data);
+    window.ItineraryStorage.saveItinerary(state.data);
+    render();
+    if (message) showToast(message);
+  }
+
+  function commitMutation(mutator, message) {
+    const before = cloneData(state.data);
+    const changed = mutator();
+    if (!changed) return false;
+    state.undoStack.push(before);
+    state.redoStack = [];
+    saveAndRender(message);
+    return true;
+  }
+
+  function undo() {
+    if (!state.undoStack.length) return;
+    const current = cloneData(state.data);
+    const previous = state.undoStack.pop();
+    state.redoStack.push(current);
+    applyHistoryState(previous, "已復原上一步");
+  }
+
+  function redo() {
+    if (!state.redoStack.length) return;
+    const current = cloneData(state.data);
+    const next = state.redoStack.pop();
+    state.undoStack.push(current);
+    applyHistoryState(next, "已重做下一步");
+  }
+
+  function clearHistory() {
+    state.undoStack = [];
+    state.redoStack = [];
   }
 
   function formatDate(dateValue) {
@@ -69,6 +152,8 @@
 
   function extraRows(item) {
     const rows = [
+      ["完整說明", item.description],
+      ["備註", item.note],
       ["停留時間", item.stayTime],
       ["停車", item.parking],
       ["步行", item.walking],
@@ -88,25 +173,39 @@
     });
   }
 
+  function concisePrice(price) {
+    if (!price) return "";
+    const yenMatch = price.match(/([^；。]*約\s*¥[\d,]+)/);
+    if (yenMatch) return yenMatch[1].replace(/^目前紀錄：/, "");
+    return price.length <= 24 ? price : "";
+  }
+
+  function inlineFacts(item) {
+    const facts = [];
+    const price = concisePrice(item.price);
+    if (item.reservation && item.reservation.length <= 10) facts.push("已預約");
+    if (item.openingHours && item.openingHours.length <= 22) facts.push(item.openingHours);
+    if (price) facts.push(price);
+    if (!facts.length) return "";
+    return '<div class="inline-facts">' + facts.map(function (fact) {
+      return "<span>" + esc(fact) + "</span>";
+    }).join("") + "</div>";
+  }
+
   function itemActions(item) {
     const editActions = state.editMode
       ? '<div class="edit-actions">' +
           '<button type="button" data-action="edit" data-id="' + esc(item.id) + '">編輯</button>' +
-          '<button type="button" data-action="up" data-id="' + esc(item.id) + '">上移</button>' +
-          '<button type="button" data-action="down" data-id="' + esc(item.id) + '">下移</button>' +
           '<button type="button" data-action="pause" data-id="' + esc(item.id) + '">暫停</button>' +
           '<button type="button" data-action="delete" data-id="' + esc(item.id) + '">刪除</button>' +
         "</div>"
       : "";
 
-    const map = item.googleMapsUrl
-      ? '<a class="pill-action" href="' + esc(item.googleMapsUrl) + '" target="_blank" rel="noreferrer">導航</a>'
-      : "";
     const phone = item.phone ? '<a class="pill-action" href="tel:' + esc(item.phone) + '">撥號</a>' : "";
     const mapCode = item.mapCode
       ? '<button class="pill-action" type="button" data-action="copy-mapcode" data-code="' + esc(item.mapCode) + '">複製 Map Code</button>'
       : "";
-    const quickActions = map || phone || mapCode ? '<div class="quick-actions">' + map + phone + mapCode + "</div>" : "";
+    const quickActions = phone || mapCode ? '<div class="quick-actions">' + phone + mapCode + "</div>" : "";
     return quickActions + editActions;
   }
 
@@ -116,22 +215,31 @@
         return '<p><span>' + esc(row[0]) + '</span>' + esc(row[1]) + "</p>";
       })
       .join("");
-    const detail = rows ? '<div class="item-details">' + rows + "</div>" : "";
-    const note = item.note ? '<p class="note-line">註記：' + esc(item.note) + "</p>" : "";
+    const detail = rows
+      ? '<details class="item-details"><summary>詳細資訊 ▾</summary><div class="detail-grid">' + rows + "</div></details>"
+      : "";
     const description = item.description ? '<p class="description">' + esc(item.description) + "</p>" : "";
     const japaneseName = item.japaneseName ? '<p class="jp-name">' + esc(item.japaneseName) + "</p>" : "";
+    const dragHandle = state.editMode
+      ? '<button class="drag-handle" type="button" data-drag-handle data-id="' + esc(item.id) + '" aria-label="拖曳排序">☰</button>'
+      : "";
+    const mapUrl = mapUrlForItem(item);
+    const itemName = mapUrl
+      ? '<a class="item-title-link" href="' + esc(mapUrl) + '" target="_blank" rel="noreferrer">' + esc(item.name) + ' <span aria-hidden="true">📍</span></a>'
+      : esc(item.name);
 
     return (
-      '<article class="timeline-item" data-id="' + esc(item.id) + '">' +
+      '<article class="timeline-item" data-id="' + esc(item.id) + '" data-period="' + esc(item.period) + '">' +
       '<div class="timeline-dot" aria-hidden="true"></div>' +
       '<div class="item-main">' +
+      dragHandle +
       '<div class="item-kicker"><span>' + esc(labels.TYPE_LABELS[item.type] || "其他") + '</span><span class="priority ' + esc(item.priority) + '">' + esc(labels.PRIORITY_LABELS[item.priority] || "順路可去") + "</span></div>" +
-      "<h3>" + esc(item.name) + "</h3>" +
+      "<h3>" + itemName + "</h3>" +
       japaneseName +
       description +
-      note +
-      detail +
+      inlineFacts(item) +
       itemActions(item) +
+      detail +
       "</div>" +
       "</article>"
     );
@@ -139,15 +247,15 @@
 
   function dayTemplate(day, options) {
     const onlyPreview = options && options.preview;
-    const itemsByPeriod = labels.PERIODS.map(function (period) {
+    const periodList = periodListForDay(day, state.editMode && !onlyPreview);
+    const showEmptyDropZones = state.editMode && !onlyPreview;
+    const itemsByPeriod = periodList.reduce(function (html, period) {
       const items = activeItems(day).filter(function (item) {
         return item.period === period;
       });
-      const body = items.length
-        ? items.map(itemTemplate).join("")
-        : '<p class="empty-period">尚無正式行程</p>';
-      return '<section class="period-section"><h3>' + esc(period) + '</h3><div class="timeline">' + body + "</div></section>";
-    }).join("");
+      if (!items.length && !showEmptyDropZones) return html;
+      return html + periodSectionTemplate(period, items, day.day, showEmptyDropZones);
+    }, "");
 
     const addButton = state.editMode && !onlyPreview
       ? '<div class="day-add-row"><button class="add-item-button" type="button" data-add-day="' + esc(day.day) + '">＋ 新增行程</button></div>'
@@ -171,6 +279,21 @@
       addButton +
       "</article>"
     );
+  }
+
+  function periodListForDay(day, includeBasePeriods) {
+    const periods = includeBasePeriods ? labels.PERIODS.slice() : [];
+    day.items.forEach(function (item) {
+      if (item.status === "active" && item.period && !periods.includes(item.period)) periods.push(item.period);
+    });
+    return periods;
+  }
+
+  function periodSectionTemplate(period, items, dayNumber, showEmptyDropZone) {
+    const body = items.length
+      ? items.map(itemTemplate).join("")
+      : showEmptyDropZone ? '<div class="empty-drop-zone">拖曳到這裡</div>' : "";
+    return '<section class="period-section" data-period="' + esc(period) + '" data-day="' + esc(dayNumber) + '"><h3>' + esc(period) + '</h3><div class="timeline drop-zone" data-period="' + esc(period) + '" data-day="' + esc(dayNumber) + '">' + body + "</div></section>";
   }
 
   function renderDayTabs() {
@@ -212,7 +335,14 @@
       });
       const body = hotelItems.length
         ? hotelItems.map(function (item) {
-            return '<div class="simple-row"><div><strong>Day ' + esc(day.day) + " · " + esc(item.name) + '</strong><p>' + esc(item.note || item.reservation || "住宿資訊待補") + '</p></div><button type="button" data-action="edit" data-id="' + esc(item.id) + '">修改</button></div>';
+            const shortcutName = privateShortcutName(item.id);
+            const privateLink = shortcutName && !state.editMode
+              ? '<a class="pill-action private-booking-link" href="' + esc(shortcutUrl(shortcutName)) + '">🔒 訂房資料</a>'
+              : "";
+            const privateEditor = state.editMode
+              ? '<div class="private-booking-editor"><label>私人訂房資料<span>捷徑名稱</span><input type="text" data-private-shortcut-input data-id="' + esc(item.id) + '" value="' + esc(shortcutName) + '" placeholder="例如：Dormy訂房"></label><div><button type="button" data-action="save-private-shortcut" data-id="' + esc(item.id) + '">儲存</button><button type="button" data-action="clear-private-shortcut" data-id="' + esc(item.id) + '">清除</button></div></div>'
+              : "";
+            return '<div class="simple-row hotel-row"><div><strong>Day ' + esc(day.day) + " · " + esc(item.name) + '</strong><p>' + esc(item.note || item.reservation || "住宿資訊待補") + '</p><div class="hotel-private-actions">' + privateLink + privateEditor + '</div></div><button type="button" data-action="edit" data-id="' + esc(item.id) + '">修改</button></div>';
           }).join("")
         : '<div class="simple-row muted"><div><strong>Day ' + esc(day.day) + '</strong><p>尚未填入住宿</p></div></div>';
       return body;
@@ -243,6 +373,9 @@
     $("#editModeButton").setAttribute("aria-pressed", String(state.editMode));
     $("#editModeButton span:last-child").textContent = state.editMode ? "結束編輯" : "編輯行程";
     $("#toggleEditFromMore").textContent = state.editMode ? "結束編輯模式" : "編輯模式";
+    $("#editHistoryToolbar").hidden = !state.editMode;
+    $("#undoButton").disabled = !state.undoStack.length;
+    $("#redoButton").disabled = !state.redoStack.length;
     renderToday();
     renderItinerary();
     renderHotels();
@@ -298,6 +431,7 @@
       Object.keys(found.item).forEach(function (key) {
         if (form.elements[key]) form.elements[key].value = found.item[key] || "";
       });
+      if (form.elements.mapUrl) form.elements.mapUrl.value = mapUrlForItem(found.item);
     } else {
       form.elements.day.value = state.activeDay;
       form.elements.type.value = "attraction";
@@ -328,11 +462,21 @@
     const id = target.dataset.id;
     if (!action) return;
     if (action === "edit") openEditor(id);
-    if (action === "up" && labels.moveItem(state.data, id, -1)) saveAndRender("已上移");
-    if (action === "down" && labels.moveItem(state.data, id, 1)) saveAndRender("已下移");
-    if (action === "pause" && labels.setStatus(state.data, id, "hidden")) saveAndRender("已暫停，保留在候選項目");
-    if (action === "delete" && labels.setStatus(state.data, id, "deleted")) saveAndRender("已刪除，可從候選項目恢復");
-    if (action === "restore" && labels.restoreItem(state.data, id)) saveAndRender("已恢復到正式行程");
+    if (action === "pause") {
+      commitMutation(function () {
+        return labels.setStatus(state.data, id, "hidden");
+      }, "已暫停，保留在候選項目");
+    }
+    if (action === "delete") {
+      commitMutation(function () {
+        return labels.setStatus(state.data, id, "deleted");
+      }, "已刪除，可從候選項目恢復");
+    }
+    if (action === "restore") {
+      commitMutation(function () {
+        return labels.restoreItem(state.data, id);
+      }, "已恢復到正式行程");
+    }
     if (action === "copy-mapcode") {
       navigator.clipboard.writeText(target.dataset.code).then(function () {
         showToast("Map Code 已複製");
@@ -340,6 +484,176 @@
         showToast("無法複製，請手動選取 Map Code");
       });
     }
+    if (action === "save-private-shortcut") {
+      const input = $('[data-private-shortcut-input][data-id="' + CSS.escape(id) + '"]');
+      const value = input ? input.value.trim() : "";
+      if (value) state.privateSettings.hotelShortcuts[id] = value;
+      else delete state.privateSettings.hotelShortcuts[id];
+      savePrivateSettings(value ? "私人訂房資料已儲存" : "私人訂房資料已清除");
+    }
+    if (action === "clear-private-shortcut") {
+      delete state.privateSettings.hotelShortcuts[id];
+      savePrivateSettings("私人訂房資料已清除");
+    }
+  }
+
+  function clearDragTimer() {
+    if (state.drag.timer) {
+      window.clearTimeout(state.drag.timer);
+      state.drag.timer = null;
+    }
+  }
+
+  function startDrag(handle, event) {
+    const item = handle.closest(".timeline-item");
+    if (!item || !state.editMode) return;
+    event.stopPropagation();
+    state.drag.itemId = handle.dataset.id;
+    state.drag.pointerId = event.pointerId;
+    state.drag.startX = event.clientX;
+    state.drag.startY = event.clientY;
+    state.drag.active = false;
+    state.drag.currentDrop = null;
+
+    const activate = function () {
+      state.drag.active = true;
+      item.classList.add("dragging");
+      item.setAttribute("aria-grabbed", "true");
+      document.body.classList.add("is-dragging");
+      highlightDropTarget(event.clientX, event.clientY);
+      try {
+        handle.setPointerCapture(event.pointerId);
+      } catch (error) {
+        // Some browsers do not keep capture after long-press context handling.
+      }
+    };
+
+    clearDragTimer();
+    if (event.pointerType === "mouse") activate();
+    else state.drag.timer = window.setTimeout(activate, 260);
+  }
+
+  function updateDrag(event) {
+    if (!state.drag.itemId) return;
+    const moveX = Math.abs(event.clientX - state.drag.startX);
+    const moveY = Math.abs(event.clientY - state.drag.startY);
+    if (!state.drag.active && (moveX > 10 || moveY > 10)) clearDragTimer();
+    if (!state.drag.active) return;
+    event.preventDefault();
+    highlightDropTarget(event.clientX, event.clientY);
+  }
+
+  function endDrag(event) {
+    clearDragTimer();
+    if (!state.drag.itemId) return;
+    const itemId = state.drag.itemId;
+    const wasActive = state.drag.active;
+    const drop = state.drag.currentDrop || findDropTarget(event.clientX, event.clientY, itemId);
+    cleanupDrag();
+    if (!wasActive || !drop) return;
+    commitMutation(function () {
+      return labels.reorderItem(state.data, itemId, drop.day, drop.period, drop.targetItemId, drop.placeAfter);
+    }, "排序已更新");
+  }
+
+  function cleanupDrag() {
+    $$(".timeline-item.dragging").forEach(function (item) {
+      item.classList.remove("dragging");
+      item.removeAttribute("aria-grabbed");
+    });
+    $$(".drop-zone.drag-over").forEach(function (zone) {
+      zone.classList.remove("drag-over");
+    });
+    removeDragPlaceholder();
+    document.body.classList.remove("is-dragging");
+    state.drag.itemId = null;
+    state.drag.active = false;
+    state.drag.pointerId = null;
+    state.drag.currentDrop = null;
+  }
+
+  function highlightDropTarget(x, y) {
+    $$(".drop-zone.drag-over").forEach(function (zone) {
+      zone.classList.remove("drag-over");
+    });
+    const drop = findDropTarget(x, y, state.drag.itemId);
+    state.drag.currentDrop = drop;
+    if (drop && drop.zone) {
+      drop.zone.classList.add("drag-over");
+      moveDragPlaceholder(drop);
+    } else {
+      removeDragPlaceholder();
+    }
+  }
+
+  function ensureDragPlaceholder() {
+    let placeholder = $(".drag-placeholder");
+    if (!placeholder) {
+      placeholder = document.createElement("div");
+      placeholder.className = "drag-placeholder";
+      placeholder.textContent = "放在這裡";
+    }
+    return placeholder;
+  }
+
+  function removeDragPlaceholder() {
+    const placeholder = $(".drag-placeholder");
+    if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+  }
+
+  function moveDragPlaceholder(drop) {
+    if (!drop || !drop.zone) return;
+    const placeholder = ensureDragPlaceholder();
+    const target = drop.targetItemId ? $('.timeline-item[data-id="' + CSS.escape(drop.targetItemId) + '"]', drop.zone) : null;
+    if (target) {
+      drop.zone.insertBefore(placeholder, drop.placeAfter ? target.nextSibling : target);
+    } else {
+      drop.zone.appendChild(placeholder);
+    }
+  }
+
+  function findDropTarget(x, y, draggedId) {
+    const element = document.elementFromPoint(x, y);
+    let targetItem = element ? element.closest(".timeline-item") : null;
+    if (!targetItem || targetItem.dataset.id === draggedId) targetItem = nearestItemAtPoint(x, y, draggedId);
+    let zone = targetItem ? targetItem.closest(".drop-zone") : element ? element.closest(".drop-zone") : null;
+    if (!zone) {
+      zone = $$(".drop-zone").find(function (candidate) {
+        const rect = candidate.getBoundingClientRect();
+        return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+      });
+    }
+    if (!zone) return null;
+    let targetItemId = null;
+    let placeAfter = false;
+    if (targetItem && targetItem.dataset.id !== draggedId) {
+      const rect = targetItem.getBoundingClientRect();
+      targetItemId = targetItem.dataset.id;
+      placeAfter = y > rect.top + rect.height / 2;
+    }
+    return {
+      day: Number(zone.dataset.day),
+      period: zone.dataset.period,
+      targetItemId,
+      placeAfter,
+      zone
+    };
+  }
+
+  function nearestItemAtPoint(x, y, draggedId) {
+    const items = $$(".timeline-item").filter(function (item) {
+      return item.dataset.id !== draggedId;
+    });
+    let best = null;
+    items.forEach(function (item) {
+      const rect = item.getBoundingClientRect();
+      const zoneRect = item.closest(".drop-zone").getBoundingClientRect();
+      if (x < zoneRect.left - 8 || x > zoneRect.right + 8) return;
+      const verticalDistance = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
+      if (verticalDistance > 18) return;
+      if (!best || verticalDistance < best.distance) best = { item, distance: verticalDistance };
+    });
+    return best ? best.item : null;
   }
 
   function bindEvents() {
@@ -352,6 +666,20 @@
         if (addButton.dataset.addDay) state.activeDay = Number(addButton.dataset.addDay);
         openEditor();
       }
+    });
+
+    document.addEventListener("pointerdown", function (event) {
+      const handle = event.target.closest("[data-drag-handle]");
+      if (!handle) return;
+      event.preventDefault();
+      startDrag(handle, event);
+    });
+
+    document.addEventListener("pointermove", updateDrag, { passive: false });
+    document.addEventListener("pointerup", endDrag);
+    document.addEventListener("pointercancel", function () {
+      clearDragTimer();
+      cleanupDrag();
     });
 
     $("#dayTabs").addEventListener("click", function (event) {
@@ -375,6 +703,9 @@
       });
     });
 
+    $("#undoButton").addEventListener("click", undo);
+    $("#redoButton").addEventListener("click", redo);
+
     $("#showCandidatesButton").addEventListener("click", function () {
       const panel = $("#candidatesPanel");
       panel.hidden = !panel.hidden;
@@ -389,7 +720,13 @@
 
     $("#itemForm").addEventListener("submit", function (event) {
       event.preventDefault();
-      const item = labels.addOrUpdateItem(state.data, formToObject(event.currentTarget), state.editingItemId);
+      const raw = formToObject(event.currentTarget);
+      const itemId = state.editingItemId;
+      let item = null;
+      commitMutation(function () {
+        item = labels.addOrUpdateItem(state.data, raw, itemId);
+        return Boolean(item);
+      }, "");
       state.activeDay = Number(event.currentTarget.elements.day.value);
       closeEditor();
       saveAndRender(item.name + " 已儲存");
@@ -407,6 +744,7 @@
         .then(function (imported) {
           state.data = imported;
           state.activeDay = 1;
+          clearHistory();
           saveAndRender("匯入完成");
         })
         .catch(function (error) {
@@ -423,6 +761,7 @@
       window.ItineraryStorage.clearUserItinerary();
       state.data = window.ItineraryStorage.clone(window.ORIGINAL_ITINERARY);
       state.activeDay = 1;
+      clearHistory();
       render();
       showToast("已恢復原始行程");
     });

@@ -183,6 +183,28 @@ body:not(.edit-mode) .add-item-button {
   display: none;
 }
 
+.edit-history-toolbar {
+  display: flex;
+  gap: 8px;
+  margin: -4px 4px 14px;
+}
+
+.history-button {
+  min-height: 38px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: rgba(255, 250, 242, 0.82);
+  color: var(--coffee);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.history-button:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
 .day-tab {
   flex: 0 0 auto;
   min-width: 66px;
@@ -260,6 +282,7 @@ body:not(.edit-mode) .add-item-button {
 
 .timeline {
   position: relative;
+  min-height: 44px;
   padding-left: 16px;
   border-left: 1px solid var(--line);
 }
@@ -281,8 +304,84 @@ body:not(.edit-mode) .add-item-button {
 }
 
 .item-main {
+  position: relative;
   padding-bottom: 13px;
   border-bottom: 1px dashed rgba(75, 54, 43, 0.22);
+}
+
+.edit-mode .item-main {
+  padding-left: 42px;
+}
+
+.drag-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 38px;
+  border: 1px dashed rgba(75, 54, 43, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 250, 242, 0.84);
+  color: var(--coffee);
+  cursor: grab;
+  font-size: 1.08rem;
+  line-height: 1;
+  touch-action: none;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.timeline-item.dragging {
+  opacity: 0.48;
+}
+
+.is-dragging {
+  user-select: none;
+}
+
+.is-dragging .period-section > h3 {
+  pointer-events: none;
+}
+
+.drop-zone.drag-over {
+  background: rgba(165, 78, 56, 0.05);
+}
+
+.drag-placeholder {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  margin: 0 0 12px;
+  padding: 6px 10px 6px 18px;
+  border-top: 2px solid var(--rust);
+  color: var(--rust);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.drag-placeholder::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: -6px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--rust);
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.empty-drop-zone {
+  min-height: 44px;
+  padding: 12px 0;
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 .item-kicker {
@@ -322,6 +421,17 @@ body:not(.edit-mode) .add-item-button {
   line-height: 1.35;
 }
 
+.item-title-link {
+  color: var(--coffee);
+  text-decoration-color: rgba(165, 78, 56, 0.38);
+  text-underline-offset: 3px;
+}
+
+.item-title-link:focus-visible {
+  outline: 2px solid rgba(165, 78, 56, 0.48);
+  outline-offset: 3px;
+}
+
 .jp-name {
   margin-bottom: 8px;
   color: var(--muted);
@@ -335,17 +445,46 @@ body:not(.edit-mode) .add-item-button {
   line-height: 1.65;
 }
 
+.description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 .note-line {
   color: var(--wine);
 }
 
 .item-details {
-  display: grid;
-  gap: 4px 10px;
   margin-top: 10px;
+  padding-top: 2px;
 }
 
-.item-details p {
+.item-details summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  color: var(--coffee);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 800;
+  list-style: none;
+}
+
+.item-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.detail-grid {
+  display: grid;
+  gap: 4px 10px;
+  margin-top: 4px;
+  padding: 8px 0 2px;
+  border-top: 1px dashed rgba(75, 54, 43, 0.18);
+}
+
+.detail-grid p {
   display: grid;
   grid-template-columns: 74px 1fr;
   gap: 8px;
@@ -355,8 +494,28 @@ body:not(.edit-mode) .add-item-button {
   line-height: 1.55;
 }
 
-.item-details span {
+.detail-grid span {
   color: var(--muted);
+}
+
+.inline-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.inline-facts span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 7px;
+  border: 1px solid rgba(216, 200, 180, 0.9);
+  border-radius: 3px;
+  background: rgba(255, 250, 242, 0.76);
+  color: var(--wine);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .quick-actions,
@@ -476,6 +635,41 @@ body:not(.edit-mode) .add-item-button {
   min-height: 34px;
   padding: 6px 10px;
   border-radius: 4px;
+}
+
+.hotel-row {
+  align-items: flex-start;
+}
+
+.hotel-private-actions {
+  margin-top: 10px;
+}
+
+.private-booking-link {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+}
+
+.private-booking-editor {
+  display: grid;
+  gap: 8px;
+  max-width: 460px;
+}
+
+.private-booking-editor label {
+  color: var(--coffee);
+}
+
+.private-booking-editor label span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.private-booking-editor > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .muted {

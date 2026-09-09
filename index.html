@@ -40,6 +40,10 @@
           </div>
         </div>
         <div class="day-tabs" id="dayTabs" role="tablist" aria-label="切換每日行程"></div>
+        <div class="edit-history-toolbar" id="editHistoryToolbar" aria-label="編輯歷史工具列">
+          <button class="history-button" id="undoButton" type="button" disabled>↶ 上一步</button>
+          <button class="history-button" id="redoButton" type="button" disabled>↷ 下一步</button>
+        </div>
         <div id="dayContent"></div>
       </section>
 
@@ -123,8 +127,8 @@
           <details class="more-fields">
             <summary>更多資訊</summary>
             <div class="form-grid">
-              <label class="wide">Google Maps
-                <input name="googleMapsUrl" type="url">
+              <label class="wide">Google Maps 連結
+                <input name="mapUrl" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/...">
               </label>
               <label class="wide">地址
                 <input name="address" type="text">

@@ -1,5 +1,6 @@
 (function () {
   const STORAGE_KEY = "tohoku-2026-itinerary";
+  const PRIVATE_STORAGE_KEY = "tohoku-2026-private-settings";
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -74,6 +75,26 @@
     localStorage.removeItem(STORAGE_KEY);
   }
 
+  function loadPrivateSettings() {
+    const saved = localStorage.getItem(PRIVATE_STORAGE_KEY);
+    if (!saved) return { hotelShortcuts: {} };
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === "object" && parsed.hotelShortcuts && typeof parsed.hotelShortcuts === "object") {
+        return { hotelShortcuts: parsed.hotelShortcuts };
+      }
+    } catch (error) {
+      console.warn("Private settings are not valid JSON.", error);
+    }
+    return { hotelShortcuts: {} };
+  }
+
+  function savePrivateSettings(settings) {
+    localStorage.setItem(PRIVATE_STORAGE_KEY, JSON.stringify({
+      hotelShortcuts: settings && settings.hotelShortcuts ? settings.hotelShortcuts : {}
+    }));
+  }
+
   function exportItinerary(data) {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -110,10 +131,13 @@
 
   window.ItineraryStorage = {
     STORAGE_KEY,
+    PRIVATE_STORAGE_KEY,
     clone,
     isValidItinerary,
     loadItinerary,
     saveItinerary,
+    loadPrivateSettings,
+    savePrivateSettings,
     clearUserItinerary,
     exportItinerary,
     readImportFile

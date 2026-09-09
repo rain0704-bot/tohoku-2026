@@ -10,12 +10,12 @@
   };
 
   const PRIORITY_LABELS = {
-    must: "必去",
-    optional: "順路可去",
-    removable: "時間不夠可刪"
+    must: "優先",
+    optional: "順路",
+    removable: "彈性"
   };
 
-  const PERIODS = ["上午", "午餐", "下午", "傍晚", "晚餐", "晚間", "住宿／溫泉"];
+  const PERIODS = ["上午", "午餐", "下午", "傍晚", "晚餐", "晚間", "住宿", "住宿／溫泉"];
   const STATUSES = ["active", "standby", "hidden", "deleted"];
   const FIELD_NAMES = [
     "type",
@@ -25,7 +25,10 @@
     "priority",
     "description",
     "note",
+    "mapUrl",
     "googleMapsUrl",
+    "mapLink",
+    "maps",
     "address",
     "phone",
     "mapCode",
@@ -51,6 +54,12 @@
       if (typeof value === "string" && value.trim()) item[field] = value.trim();
       else delete item[field];
     });
+    const mapUrl = raw.mapUrl || raw.googleMapsUrl || raw.mapLink || raw.maps;
+    delete item.googleMapsUrl;
+    delete item.mapLink;
+    delete item.maps;
+    if (typeof mapUrl === "string" && mapUrl.trim()) item.mapUrl = mapUrl.trim();
+    else delete item.mapUrl;
     item.id = existing && existing.id ? existing.id : makeId(Number(raw.day));
     item.status = existing && STATUSES.includes(existing.status) ? existing.status : "active";
     item.type = item.type || "other";
@@ -79,6 +88,52 @@
     const temp = items[found.index];
     items[found.index] = items[nextIndex];
     items[nextIndex] = temp;
+    return true;
+  }
+
+  function periodIndex(period) {
+    const index = PERIODS.indexOf(period);
+    return index >= 0 ? index : PERIODS.length;
+  }
+
+  function emptyPeriodInsertIndex(items, targetPeriod) {
+    const targetRank = periodIndex(targetPeriod);
+    for (let index = 0; index < items.length; index += 1) {
+      const entry = items[index];
+      if (periodIndex(entry.period) > targetRank) return index;
+    }
+    return items.length;
+  }
+
+  function reorderItem(data, itemId, targetDayNumber, targetPeriod, targetItemId, placeAfter) {
+    const source = findItem(data, itemId);
+    const targetDay = data.days.find(function (day) {
+      return day.day === Number(targetDayNumber);
+    });
+    if (!source || !targetDay || !targetPeriod) return false;
+
+    const item = source.item;
+    source.day.items.splice(source.index, 1);
+    item.period = targetPeriod;
+
+    const targetItems = targetDay.items;
+    let insertIndex = targetItems.length;
+    if (targetItemId && targetItemId !== itemId) {
+      const targetIndex = targetItems.findIndex(function (entry) {
+        return entry.id === targetItemId;
+      });
+      if (targetIndex >= 0) insertIndex = targetIndex + (placeAfter ? 1 : 0);
+    } else {
+      insertIndex = emptyPeriodInsertIndex(targetItems, targetPeriod);
+      for (let index = targetItems.length - 1; index >= 0; index -= 1) {
+        if (targetItems[index].period === targetPeriod) {
+          insertIndex = index + 1;
+          break;
+        }
+      }
+    }
+
+    targetItems.splice(insertIndex, 0, item);
     return true;
   }
 
@@ -128,6 +183,7 @@
     PERIODS,
     findItem,
     moveItem,
+    reorderItem,
     setStatus,
     restoreItem,
     addOrUpdateItem
