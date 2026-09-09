@@ -192,6 +192,89 @@
     }).join("") + "</div>";
   }
 
+  function meaningful(value) {
+    const text = typeof value === "string" ? value.trim() : "";
+    return text && !["待確認", "未填寫", "無"].includes(text) ? text : "";
+  }
+
+  function hotelDateText(day, item) {
+    const checkIn = meaningful(item.checkInDate || item.checkIn || item.startDate) || formatDate(day.date);
+    const checkOut = meaningful(item.checkOutDate || item.checkOut || item.endDate);
+    return checkOut ? "入住 " + checkIn + " / 退房 " + checkOut : "入住 " + checkIn;
+  }
+
+  function shortHotelFact(label, value) {
+    const text = meaningful(value);
+    if (!text) return "";
+    const brief = text.length > 28 ? text.slice(0, 28) + "…" : text;
+    return '<span><b>' + esc(label) + '</b>' + esc(brief) + "</span>";
+  }
+
+  function hotelDetailRows(item) {
+    const rows = [
+      ["地址", item.address],
+      ["Check-in / Check-out", item.checkInOut || item.checkInTime || item.checkOutTime],
+      ["Map Code", item.mapCode],
+      ["房型", item.roomType || item.room],
+      ["詳細停車說明", item.parkingDetail || item.parking],
+      ["詳細早餐說明", item.breakfastDetail || item.breakfast],
+      ["費用／付款備註", item.paymentNote || item.payment || item.price],
+      ["預約", item.reservation],
+      ["其他住宿備註", item.note || item.description]
+    ];
+    return rows.filter(function (row) {
+      return meaningful(row[1]);
+    });
+  }
+
+  function hotelActionLinks(item, privateLink) {
+    const mapUrl = mapUrlForItem(item);
+    const map = mapUrl ? '<a class="pill-action" href="' + esc(mapUrl) + '" target="_blank" rel="noreferrer">Google Maps</a>' : "";
+    const phone = meaningful(item.phone) ? '<a class="pill-action" href="tel:' + esc(item.phone) + '">電話</a>' : "";
+    const actions = map + phone + privateLink;
+    return actions ? '<div class="hotel-action-row">' + actions + "</div>" : "";
+  }
+
+  function hotelCard(day, item) {
+    const shortcutName = privateShortcutName(item.id);
+    const privateLink = shortcutName && !state.editMode
+      ? '<a class="pill-action private-booking-link" href="' + esc(shortcutUrl(shortcutName)) + '">🔒 訂房資料</a>'
+      : "";
+    const privateEditor = state.editMode
+      ? '<div class="private-booking-editor"><label>私人訂房資料<span>捷徑名稱</span><input type="text" data-private-shortcut-input data-id="' + esc(item.id) + '" value="' + esc(shortcutName) + '" placeholder="例如：Dormy訂房"></label><div><button type="button" data-action="save-private-shortcut" data-id="' + esc(item.id) + '">儲存</button><button type="button" data-action="clear-private-shortcut" data-id="' + esc(item.id) + '">清除</button></div></div>'
+      : "";
+    const detailRows = hotelDetailRows(item)
+      .map(function (row) {
+        return '<p><span>' + esc(row[0]) + '</span>' + esc(row[1]) + "</p>";
+      })
+      .join("");
+    const details = detailRows
+      ? '<details class="item-details hotel-details"><summary>詳細資訊 ▾</summary><div class="detail-grid">' + detailRows + "</div></details>"
+      : "";
+    const summaryFacts = [
+      shortHotelFact("停車", item.parkingSummary || item.parking),
+      shortHotelFact("早餐", item.breakfastSummary || item.breakfast),
+      shortHotelFact("付款", item.paymentStatus || item.payment)
+    ].join("");
+    const japaneseName = meaningful(item.japaneseName) ? '<p class="jp-name">' + esc(item.japaneseName) + "</p>" : "";
+    const editButton = state.editMode ? '<button type="button" data-action="edit" data-id="' + esc(item.id) + '">修改</button>' : "";
+
+    return (
+      '<article class="simple-row hotel-row">' +
+      '<div class="hotel-main">' +
+      '<strong>Day ' + esc(day.day) + " · " + esc(item.name) + "</strong>" +
+      japaneseName +
+      '<p class="hotel-date">' + esc(hotelDateText(day, item)) + "</p>" +
+      hotelActionLinks(item, privateLink) +
+      (summaryFacts ? '<div class="hotel-facts">' + summaryFacts + "</div>" : "") +
+      privateEditor +
+      details +
+      "</div>" +
+      editButton +
+      "</article>"
+    );
+  }
+
   function itemActions(item) {
     const editActions = state.editMode
       ? '<div class="edit-actions">' +
@@ -329,25 +412,15 @@
   }
 
   function renderHotels() {
-    const hotels = state.data.days.map(function (day) {
-      const hotelItems = day.items.filter(function (item) {
+    const hotels = [];
+    state.data.days.forEach(function (day) {
+      day.items.filter(function (item) {
         return item.type === "hotel" && item.status !== "deleted";
+      }).forEach(function (item) {
+        hotels.push(hotelCard(day, item));
       });
-      const body = hotelItems.length
-        ? hotelItems.map(function (item) {
-            const shortcutName = privateShortcutName(item.id);
-            const privateLink = shortcutName && !state.editMode
-              ? '<a class="pill-action private-booking-link" href="' + esc(shortcutUrl(shortcutName)) + '">🔒 訂房資料</a>'
-              : "";
-            const privateEditor = state.editMode
-              ? '<div class="private-booking-editor"><label>私人訂房資料<span>捷徑名稱</span><input type="text" data-private-shortcut-input data-id="' + esc(item.id) + '" value="' + esc(shortcutName) + '" placeholder="例如：Dormy訂房"></label><div><button type="button" data-action="save-private-shortcut" data-id="' + esc(item.id) + '">儲存</button><button type="button" data-action="clear-private-shortcut" data-id="' + esc(item.id) + '">清除</button></div></div>'
-              : "";
-            return '<div class="simple-row hotel-row"><div><strong>Day ' + esc(day.day) + " · " + esc(item.name) + '</strong><p>' + esc(item.note || item.reservation || "住宿資訊待補") + '</p><div class="hotel-private-actions">' + privateLink + privateEditor + '</div></div><button type="button" data-action="edit" data-id="' + esc(item.id) + '">修改</button></div>';
-          }).join("")
-        : '<div class="simple-row muted"><div><strong>Day ' + esc(day.day) + '</strong><p>尚未填入住宿</p></div></div>';
-      return body;
-    }).join("");
-    $("#hotelsContent").innerHTML = hotels;
+    });
+    $("#hotelsContent").innerHTML = hotels.length ? hotels.join("") : '<p class="hint">目前沒有住宿資料。</p>';
   }
 
   function renderCandidates() {

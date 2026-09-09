@@ -1,6 +1,7 @@
 (function () {
   const STORAGE_KEY = "tohoku-2026-itinerary";
   const PRIVATE_STORAGE_KEY = "tohoku-2026-private-settings";
+  const OFFICIAL_DAY2_UPDATED = "2026-09-09";
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -47,13 +48,26 @@
     return data;
   }
 
+  function migrateDay2Official(data) {
+    const sourceDay2 = window.ORIGINAL_ITINERARY.days.find(function (day) {
+      return day.day === 2;
+    });
+    const day2Index = data.days.findIndex(function (day) {
+      return day.day === 2;
+    });
+    if (!sourceDay2 || day2Index < 0) return data;
+    if (data.days[day2Index].versionStatus === "official" && data.days[day2Index].lastUpdated === OFFICIAL_DAY2_UPDATED) return data;
+    data.days[day2Index] = clone(sourceDay2);
+    return data;
+  }
+
   function loadItinerary() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (isValidItinerary(parsed)) {
-          const migrated = migrateDay1DisplayNames(parsed);
+          const migrated = migrateDay2Official(migrateDay1DisplayNames(parsed));
           localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
           return migrated;
         }
