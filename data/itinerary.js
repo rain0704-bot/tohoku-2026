@@ -1,10 +1,10 @@
-window.ORIGINAL_ITINERARY = {
+Window.ORIGINAL_ITINERARY = {
   trip: {
     name: "日本東北 2026",
     startDate: "2026-10-15",
     endDate: "2026-10-20",
     travelers: "4位大人+1位10歲小孩",
-    note: "第一階段測試資料，已移除長輩/孩子獨立提醒欄位，相關注意事項已統一整合至備註。"
+    note: 
   },
   days: [
     {
@@ -89,7 +89,7 @@ window.ORIGINAL_ITINERARY = {
           priority: "must",
           status: "active",
           description: "晚餐結束後返回飯店休息。",
-          note: "Day 1 到此結束，不安排夜間景點。讓同行者與駕駛充分休息，準備 Day 2。"
+          note: "Day 1 到此結束，不安排夜間景點。讓長輩、小孩及唯一駕駛充分休息，準備 Day 2。"
         }
       ]
     },
@@ -243,7 +243,9 @@ window.ORIGINAL_ITINERARY = {
           stayTime: "約 90 分鐘",
           openingHours: "10 月目前查得有 11:00 船班；遊船往返約 90 分鐘。",
           price: "成人 ¥2,000；小學生 ¥900",
-          note: "上下船時注意腳步。10 月山區早晚偏涼，注意保暖。船班可能因天候、水位等因素調整或停航；旺季可能有加班船，出發前再次確認 2026/10/17 官方船班。"
+          seniorNote: "上下船時注意腳步，不需要搶快。",
+          childNote: "10 月山區早晚偏涼，注意保暖。",
+          note: "船班可能因天候、水位等因素調整或停航；旺季可能有加班船。出發前再次確認 2026/10/17 官方船班。"
         },
         {
           id: "day3-geibikei-snack-rest",
@@ -275,7 +277,7 @@ window.ORIGINAL_ITINERARY = {
           status: "active",
           description: "抵達後停車、洗手間、整理裝備，慢慢開始中尊寺參觀。核心目標為金色堂。",
           toilet: "抵達後先上洗手間。",
-          walking: "中尊寺有坡度。"
+          walking: "中尊寺有坡度。",
         },
         {
           id: "day3-chusonji-konjikido",
@@ -289,7 +291,7 @@ window.ORIGINAL_ITINERARY = {
           stayTime: "約 2 小時",
           openingHours: "目前查得參拜時間：08:30～17:00",
           price: "基本參觀票目前查得：成人 ¥1,000；小學生 ¥300。秘佛御開帳相關共通券目前查得：成人 ¥1,600；小學生 ¥500。",
-          walking: "中尊寺有坡度。",
+          walking: "中尊寺有坡道。",
           note: "2026 年適逢中尊寺落慶 900 年、平泉世界遺產登錄 15 周年。2026/7/17～11/15 有「秘佛 一字金輪佛頂尊」御開帳；若當天想參觀秘佛，可再評估共通券，但秘佛御開帳不建立成另一個 itinerary item，也不標成必去。金色堂內禁止攝影，戶外參道及寺院外觀依現場規定拍攝。預計約 15:40 左右開始往停車場移動，最晚不要為了多看一個寺院而拖延後續矢巾行程。"
         },
         {
@@ -299,7 +301,8 @@ window.ORIGINAL_ITINERARY = {
           name: "約 15:50｜中尊寺 → 回転寿司 すノ家 矢巾店",
           priority: "must",
           status: "active",
-          description: "前往矢巾，預估車程約 1 小時 10 分。目標約 17:00 抵達晚餐餐廳。"
+          description: "前往矢巾，預估車程約 1 小時 10 分。目標約 17:00 抵達晚餐餐廳。",
+          seniorNote: "這是 Day 3 最後一段主要駕駛，不要再加入其他景點。"
         },
         {
           id: "day3-sunoya-yahaba-dinner",
@@ -347,6 +350,7 @@ window.ORIGINAL_ITINERARY = {
           priority: "must",
           status: "active",
           description: "早餐後退房，往八幡平方向前進。今天以沿途秋季景色、大沼與溫泉住宿為主，不追求大量景點。",
+          seniorNote: "今天仍只有一位駕駛，山區行車不趕時間，途中視需要安排洗手間休息。",
           note: "10 月中旬山區天候變化快。若有低溫、濃霧、強風或道路管制，以安全為優先。不要為了趕山頂增加駕駛壓力。"
         },
         {
@@ -612,7 +616,7 @@ window.ORIGINAL_ITINERARY = {
           description: "Day 6 第一個購物重點。優先處理孩子想看的角色商品，避免下午才發現角色商品還沒買。",
           stayTime: "約 60 分鐘",
           openingHours: "目前官方商場營業時間約 10:00～20:00；實際 2026/10/20 營業資訊，出發前再次確認。",
-          note: "以約 1 小時為上限。吉伊卡哇列為主要目標。"
+          note: "，以約 1 小時為上限。吉伊卡哇列為主要目標。"
         },
         {
           id: "day6-spal-sendai-shopping",
