@@ -561,7 +561,7 @@ window.ITINERARY_DATA = {
           "name": "約 17:10 後｜仙台站周邊商圈・藥妝",
           "priority": "removable",
           "status": "active",
-          "description": "入住後如果大家還有精神，再前往仙台站周邊簡單購物、逛藥妝。如果累了，這一站可以直接取消。",
+          "description": "入住後如果還有精神，再前往仙台站周邊簡單購物、逛藥妝。如果累了，這一站可以直接取消。",
           "note": "手冊原有候選：S-PAL 仙台、Yodobashi 仙台、仙台 PARCO／PARCO2、UNIQLO、MUJI、藥妝。Day 6 本來就有仙台市區購物時間，累了可直接取消，不硬撐。"
         },
         {
@@ -652,7 +652,7 @@ window.ITINERARY_DATA = {
           "description": "正式結束仙台購物。回到停車處整理最後採買物品，確認行李與重要證件後準備前往機場。",
           "stayTime": "約 20 分鐘",
           "toilet": "全員先使用洗手間。",
-          "note": "整理購物袋，需要托運的液體放進托運行李。確認護照、手機、錢包與所有行李件數。"
+          "note": "整理購物袋，需要托運的液體放進托運行進。確認護照、手機、錢包與所有行李件數。"
         },
         {
           "id": "day6-sendai-city-to-times-car-airport",
