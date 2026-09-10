@@ -3,7 +3,7 @@ window.ORIGINAL_ITINERARY = {
     name: "日本東北 2026",
     startDate: "2026-10-15",
     endDate: "2026-10-20",
-    travelers: "4位大人+1位10歲小孩",
+    travelers: "  4位大人+1位10歲小孩",
     note: ""
   },
   days: [
@@ -33,7 +33,6 @@ window.ORIGINAL_ITINERARY = {
           status: "active",
           description: "星宇航空抵達仙台。完成入境、領取行李後，準備前往租車公司。",
           stayTime: "依當天入境及行李領取狀況",
-          toilet: "機場內有洗手間",
           note: "航班預計 16:00 抵達。"
         },
         {
@@ -47,16 +46,6 @@ window.ORIGINAL_ITINERARY = {
           reservation: "已預訂",
           description: "辦理租車手續、確認車輛、行李空間及導航後出發。",
           note: "預約取車時間 17:00"
-        },
-        {
-          id: "day1-drive-to-dormy-inn",
-          type: "transport",
-          period: "傍晚",
-          name: "【交通移動】仙台機場 → Dormy Inn",
-          priority: "must",
-          status: "active",
-          description: "完成取車後前往仙台市區住宿。",
-          note: "不設定精確抵達時間，依當天入境、行李及租車手續進度彈性調整。"
         },
         {
           id: "day1-dormy-inn-checkin",
@@ -79,7 +68,7 @@ window.ORIGINAL_ITINERARY = {
           status: "active",
           description: "家庭用餐方便",
           openingHours: "10:00～22:00",
-          price: "牛舌燒定食約 ¥1,800；接近出發日前重新確認最新菜單與價格。"
+          price: "¥1000-2000"
         },
         {
           id: "day1-return-to-dormy-inn",
@@ -89,7 +78,7 @@ window.ORIGINAL_ITINERARY = {
           priority: "must",
           status: "active",
           description: "晚餐結束後返回飯店休息。",
-          note: "Day 1 到此結束，不安排夜間景點。讓長輩、小孩及唯一駕駛充分休息，準備 Day 2。"
+          note: ""
         }
       ]
     },
