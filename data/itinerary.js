@@ -1,10 +1,10 @@
-Window.ORIGINAL_ITINERARY = {
+window.ORIGINAL_ITINERARY = {
   trip: {
     name: "日本東北 2026",
     startDate: "2026-10-15",
     endDate: "2026-10-20",
     travelers: "4位大人+1位10歲小孩",
-    note: 
+    note: ""
   },
   days: [
     {
@@ -278,6 +278,7 @@ Window.ORIGINAL_ITINERARY = {
           description: "抵達後停車、洗手間、整理裝備，慢慢開始中尊寺參觀。核心目標為金色堂。",
           toilet: "抵達後先上洗手間。",
           walking: "中尊寺有坡度。",
+          note: ""
         },
         {
           id: "day3-chusonji-konjikido",
