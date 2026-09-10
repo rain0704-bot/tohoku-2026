@@ -7,82 +7,81 @@ window.ORIGINAL_ITINERARY = {
     note: ""
   },
   days: [
+{
+  day: 1,
+  date: "2026-10-15",
+  weekday: "THU",
+  title: "抵達仙台",
+  route: "仙台機場 → 取車 → Dormy Inn → まるまつ中野店 → 返回 Dormy Inn",
+  position: "抵達日。完成入境、取車、入住、晚餐及返回飯店休息。",
+  versionStatus: "official",
+  lastUpdated: "2026-09-10",
+  flight: {
+    route: "台北桃園國際機場 → 仙台機場",
+    airline: "星宇航空",
+    departure: "11:35",
+    arrival: "16:00"
+  },
+  items: [
     {
-      day: 1,
-      date: "2026-10-15",
-      weekday: "THU",
-      title: "抵達仙台",
-      route: "仙台機場 → 取車 → Dormy Inn → まるまつ中野店",
-      position: "抵達日。完成入境、取車、入住及晚餐。",
-      versionStatus: "official",
-      lastUpdated: "2026-09-08",
-      flight: {
-        route: "台北桃園國際機場 → 仙台機場",
-        airline: "星宇航空",
-        departure: "11:35",
-        arrival: "16:00"
-      },
-      items: [
-        {
-          id: "day1-arrive-sendai-airport",
-          type: "transport",
-          period: "下午",
-          name: "抵達仙台機場",
-          japaneseName: "仙台空港",
-          priority: "must",
-          status: "active",
-          description: "星宇航空抵達仙台。完成入境、領取行李後，準備前往租車公司。",
-          stayTime: "依當天入境及行李領取狀況",
-          note: "航班預計 16:00 抵達。"
-        },
-        {
-          id: "day1-times-car-sendai-airport",
-          type: "transport",
-          period: "下午",
-          name: "Times Car 仙台空港取車",
-          japaneseName: "タイムズカー仙台空港",
-          priority: "must",
-          status: "active",
-          reservation: "已預訂",
-          description: "辦理租車手續、確認車輛、行李空間及導航後出發。",
-          note: "預約取車時間 17:00"
-        },
-        {
-          id: "day1-dormy-inn-checkin",
-          type: "hotel",
-          period: "傍晚",
-          name: "Dormy Inn 入住",
-          priority: "must",
-          status: "active",
-          reservation: "已預訂",
-          description: "仙台前段住宿，10/15～10/17 連住兩晚。",
-          note: "抵達飯店後先辦理入住、放置行李及稍作休息，再前往晚餐。"
-        },
-        {
-          id: "day1-marumatsu-nakano-dinner",
-          type: "restaurant",
-          period: "晚餐",
-          name: "まるまつ中野店 晚餐",
-          japaneseName: "まるまつ中野店",
-          priority: "must",
-          status: "active",
-          description: "家庭用餐方便",
-          openingHours: "10:00～22:00",
-          price: "¥1000-2000"
-        },
-        {
-          id: "day1-return-to-dormy-inn",
-          type: "transport",
-          period: "晚間",
-          name: "返回 Dormy Inn 休息",
-          priority: "must",
-          status: "active",
-          description: "晚餐結束後返回飯店休息。",
-          note: ""
-        }
-      ]
+      id: "day1-arrive-sendai-airport",
+      type: "transport",
+      period: "下午",
+      name: "抵達仙台機場",
+      japaneseName: "仙台空港",
+      priority: "must",
+      status: "active",
+      description: "星宇航空抵達仙台。完成入境、領取行李後，準備前往租車公司。",
+      stayTime: "依當天入境及行李領取狀況",
+      note: "航班預計 16:00 抵達。"
     },
     {
+      id: "day1-times-car-sendai-airport",
+      type: "transport",
+      period: "下午",
+      name: "Times Car 仙台空港取車",
+      japaneseName: "タイムズカー仙台空港",
+      priority: "must",
+      status: "active",
+      reservation: "已預訂",
+      description: "辦理租車手續、確認車輛、行李空間及導航後出發。",
+      note: "預約取車時間 17:00"
+    },
+    {
+      id: "day1-dormy-inn-checkin",
+      type: "hotel",
+      period: "傍晚",
+      name: "Dormy Inn 入住",
+      priority: "must",
+      status: "active",
+      reservation: "已預訂",
+      description: "仙台前段住宿，10/15～10/17 連住兩晚。",
+      note: "抵達飯店後先辦理入住、放置行李及稍作休息，再前往晚餐。"
+    },
+    {
+      id: "day1-marumatsu-nakano-dinner",
+      type: "restaurant",
+      period: "晚餐",
+      name: "まるまつ中野店 晚餐",
+      japaneseName: "まるまつ中野店",
+      priority: "must",
+      status: "active",
+      description: "家庭用餐方便。",
+      openingHours: "10:00～22:00",
+      price: "¥1000-2000"
+    },
+    {
+      id: "day1-return-to-dormy-inn",
+      type: "transport",
+      period: "晚間",
+      name: "返回 Dormy Inn 休息",
+      priority: "must",
+      status: "active",
+      description: "晚餐結束後返回飯店休息。",
+      note: ""
+    }
+  ]
+},
       day: 2,
       date: "2026-10-16",
       weekday: "FRI",
