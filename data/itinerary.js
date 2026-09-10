@@ -82,6 +82,7 @@ window.ORIGINAL_ITINERARY = {
     }
   ]
 },
+{
       day: 2,
       date: "2026-10-16",
       weekday: "FRI",
